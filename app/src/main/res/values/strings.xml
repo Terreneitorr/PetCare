@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- app_name se define en build.gradle.kts por flavor (dev/prod) -->
+</resources>
