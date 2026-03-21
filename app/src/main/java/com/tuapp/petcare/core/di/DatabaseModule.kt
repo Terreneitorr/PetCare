@@ -13,6 +13,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
+// contiene instrucciones para crear dependencias de librerías externas
 @Module
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {

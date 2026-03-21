@@ -27,5 +27,6 @@ class PetsRepositoryImpl @Inject constructor(
         petDao.updatePet(pet.toEntity())
 
     override suspend fun deletePet(id: String) =
+
         petDao.deletePet(id)
 }

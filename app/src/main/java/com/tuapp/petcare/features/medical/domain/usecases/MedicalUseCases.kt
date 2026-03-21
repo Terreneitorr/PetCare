@@ -30,3 +30,17 @@ class AddVaccineUseCase @Inject constructor(
         }
     }
 }
+
+// ── NUEVO ──────────────────────────────────────────────────────────────────
+class DeleteVaccineUseCase @Inject constructor(
+    private val repository: MedicalRepository
+) {
+    suspend operator fun invoke(id: String): Result<Unit> {
+        return try {
+            repository.deleteVaccine(id)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+}

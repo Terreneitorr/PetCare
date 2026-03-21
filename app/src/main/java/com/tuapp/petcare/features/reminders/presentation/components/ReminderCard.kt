@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AlarmOff
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -20,9 +21,10 @@ import java.util.Locale
 fun ReminderCard(
     reminder: Reminder,
     onCancel: () -> Unit,
+    onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val dateStr = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+    val dateStr = SimpleDateFormat("dd/MM/yyyy hh:mm a", Locale.getDefault())
         .format(Date(reminder.triggerAtMillis))
 
     Card(
@@ -81,14 +83,24 @@ fun ReminderCard(
                 }
             }
 
+            // Botón cancelar — solo si está activo
             if (reminder.isActive) {
                 IconButton(onClick = onCancel) {
                     Icon(
                         imageVector = Icons.Default.AlarmOff,
-                        contentDescription = "Cancelar recordatorio",
+                        contentDescription = "Cancelar alarma",
                         tint = MaterialTheme.colorScheme.error
                     )
                 }
+            }
+
+            // Botón eliminar — siempre visible
+            IconButton(onClick = onDelete) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Eliminar recordatorio",
+                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                )
             }
         }
     }

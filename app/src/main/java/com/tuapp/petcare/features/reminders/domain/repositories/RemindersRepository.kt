@@ -8,4 +8,5 @@ interface RemindersRepository {
     suspend fun getActiveReminders(): List<Reminder>
     suspend fun scheduleReminder(reminder: Reminder)
     suspend fun cancelReminder(id: String)
+    suspend fun deleteReminder(id: String)
 }

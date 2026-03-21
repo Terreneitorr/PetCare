@@ -4,6 +4,7 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import com.tuapp.petcare.features.reminders.data.ReminderBroadcastReceiver
 import com.tuapp.petcare.features.reminders.data.datasources.local.ReminderDao
 import com.tuapp.petcare.features.reminders.data.datasources.local.toDomain
@@ -32,7 +33,12 @@ class RemindersRepositoryImpl @Inject constructor(
         // 1. Guarda en Room
         reminderDao.insertReminder(reminder.toEntity())
 
-        // 2. Programa alarma con AlarmManager (hardware #3)
+        // 2. Verifica permiso en Android 12+ antes de programar alarma exacta
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (!alarmManager.canScheduleExactAlarms()) return
+        }
+
+        // 3. Programa alarma con AlarmManager (hardware #3)
         val intent = Intent(context, ReminderBroadcastReceiver::class.java).apply {
             putExtra("title", reminder.title)
             putExtra("description", reminder.description)
@@ -64,5 +70,21 @@ class RemindersRepositoryImpl @Inject constructor(
             PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
         )
         pendingIntent?.let { alarmManager.cancel(it) }
+    }
+
+    // ── elimina la alarma del sistema y el registro de Room ─────────
+    override suspend fun deleteReminder(id: String) {
+        // Primero cancela la alarma del sistema
+        val intent = Intent(context, ReminderBroadcastReceiver::class.java)
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            id.hashCode(),
+            intent,
+            PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+        )
+        pendingIntent?.let { alarmManager.cancel(it) }
+
+        // Luego elimina de Room
+        reminderDao.deleteReminder(id)
     }
 }
