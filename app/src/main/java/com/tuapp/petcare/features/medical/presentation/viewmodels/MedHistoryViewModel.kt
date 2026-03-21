@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tuapp.petcare.features.medical.domain.entities.Vaccine
 import com.tuapp.petcare.features.medical.domain.usecases.AddVaccineUseCase
+import com.tuapp.petcare.features.medical.domain.usecases.DeleteVaccineUseCase
 import com.tuapp.petcare.features.medical.domain.usecases.GetVaccinesUseCase
 import com.tuapp.petcare.features.medical.presentation.screens.AddVaccineUiState
 import com.tuapp.petcare.features.medical.presentation.screens.MedHistoryUiState
@@ -18,7 +19,8 @@ import javax.inject.Inject
 @HiltViewModel
 class MedHistoryViewModel @Inject constructor(
     private val getVaccinesUseCase: GetVaccinesUseCase,
-    private val addVaccineUseCase: AddVaccineUseCase
+    private val addVaccineUseCase: AddVaccineUseCase,
+    private val deleteVaccineUseCase: DeleteVaccineUseCase
 ) : ViewModel() {
 
     private val _historyState = MutableStateFlow(MedHistoryUiState())
@@ -27,8 +29,11 @@ class MedHistoryViewModel @Inject constructor(
     private val _addState = MutableStateFlow(AddVaccineUiState())
     val addState = _addState.asStateFlow()
 
-    // Carga el historial de una mascota específica
+    // Guarda el petId actual para recargar después de eliminar
+    private var currentPetId: String = ""
+
     fun loadVaccines(petId: String) {
+        currentPetId = petId
         viewModelScope.launch {
             _historyState.update { it.copy(isLoading = true) }
             getVaccinesUseCase(petId)
@@ -41,15 +46,12 @@ class MedHistoryViewModel @Inject constructor(
         }
     }
 
-    // Campos del formulario de vacuna
     fun onNameChange(v: String)         = _addState.update { it.copy(name = v, error = null) }
     fun onDateChange(v: String)         = _addState.update { it.copy(date = v) }
     fun onNextDoseDateChange(v: String) = _addState.update { it.copy(nextDoseDate = v) }
     fun onVetChange(v: String)          = _addState.update { it.copy(veterinarian = v) }
     fun onNotesChange(v: String)        = _addState.update { it.copy(notes = v) }
 
-    // Rellena los campos desde un QR escaneado
-    // El QR debe contener texto con formato: "nombre|fecha|próxima|veterinario"
     fun onQrScanned(qrContent: String) {
         val parts = qrContent.split("|")
         _addState.update {
@@ -81,6 +83,14 @@ class MedHistoryViewModel @Inject constructor(
                 onSuccess = { _addState.update { it.copy(isLoading = false, isSuccess = true) } },
                 onFailure = { e -> _addState.update { it.copy(isLoading = false, error = e.message) } }
             )
+        }
+    }
+
+    // ── NUEVO: eliminar vacuna ─────────────────────────────────────────────
+    fun onDeleteVaccine(vaccineId: String) {
+        viewModelScope.launch {
+            deleteVaccineUseCase(vaccineId)
+            // Room actualiza el Flow automáticamente, no necesita recarga manual
         }
     }
 }

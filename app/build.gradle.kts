@@ -45,12 +45,12 @@ android {
         create("dev") {
             dimension = "environment"
             // Cambia esta URL por la de tu MockAPI cuando la crees en mockapi.io
-            buildConfigField("String", "BASE_URL", "\"http://98.84.139.40:3000/\"")
+            buildConfigField("String", "BASE_URL", "\"http://34.228.172.246:3000/\"")
             resValue("string", "app_name", "PetCare (DEV)")
         }
         create("prod") {
             dimension = "environment"
-            buildConfigField("String", "BASE_URL", "\"http://98.84.139.40:3000/\"")
+            buildConfigField("String", "BASE_URL", "\"http://34.228.172.246:3000/\"")
             resValue("string", "app_name", "PetCare")
         }
     }

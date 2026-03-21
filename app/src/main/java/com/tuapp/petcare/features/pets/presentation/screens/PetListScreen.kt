@@ -31,9 +31,7 @@ fun PetListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Text("Mis mascotas 🐾", fontWeight = FontWeight.Bold)
-                },
+                title = { Text("Mis mascotas 🐾", fontWeight = FontWeight.Bold) },
                 actions = {
                     IconButton(onClick = onReminders) {
                         Icon(
@@ -94,7 +92,8 @@ fun PetListScreen(
                         items(uiState.pets, key = { it.id }) { pet ->
                             PetCard(
                                 pet = pet,
-                                onClick = { onPetClick(pet.id) }
+                                onClick = { onPetClick(pet.id) },
+                                onDelete = { viewModel.onDeletePet(pet.id) }
                             )
                         }
                     }

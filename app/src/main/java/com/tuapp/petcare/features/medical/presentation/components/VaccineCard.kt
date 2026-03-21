@@ -3,6 +3,7 @@ package com.tuapp.petcare.features.medical.presentation.components
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Vaccines
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -15,6 +16,7 @@ import com.tuapp.petcare.features.medical.domain.entities.Vaccine
 @Composable
 fun VaccineCard(
     vaccine: Vaccine,
+    onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -71,6 +73,15 @@ fun VaccineCard(
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                     )
                 }
+            }
+
+            // Botón eliminar vacuna
+            IconButton(onClick = onDelete) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Eliminar vacuna",
+                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                )
             }
         }
     }

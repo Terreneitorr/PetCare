@@ -61,7 +61,9 @@ fun MedHistoryScreen(
                     Text(
                         text = uiState.error!!,
                         color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.align(Alignment.Center).padding(16.dp)
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .padding(16.dp)
                     )
                 }
                 uiState.vaccines.isEmpty() -> {
@@ -85,7 +87,10 @@ fun MedHistoryScreen(
                         contentPadding = PaddingValues(vertical = 8.dp)
                     ) {
                         items(uiState.vaccines, key = { it.id }) { vaccine ->
-                            VaccineCard(vaccine = vaccine)
+                            VaccineCard(
+                                vaccine = vaccine,
+                                onDelete = { viewModel.onDeleteVaccine(vaccine.id) }
+                            )
                         }
                     }
                 }

@@ -62,11 +62,11 @@ class RemindersViewModel @Inject constructor(
                 onSuccess = {
                     _uiState.update {
                         it.copy(
-                            showAddDialog = false,
-                            saveSuccess   = true,
-                            newTitle      = "",
-                            newDescription = "",
-                            newPetName    = "",
+                            showAddDialog    = false,
+                            saveSuccess      = true,
+                            newTitle         = "",
+                            newDescription   = "",
+                            newPetName       = "",
                             newTriggerMillis = 0L
                         )
                     }
@@ -81,6 +81,13 @@ class RemindersViewModel @Inject constructor(
     fun onCancelReminder(id: String) {
         viewModelScope.launch {
             remindersRepository.cancelReminder(id)
+        }
+    }
+
+    // ── NUEVO: elimina el recordatorio completamente ───────────────────────
+    fun onDeleteReminder(id: String) {
+        viewModelScope.launch {
+            remindersRepository.deleteReminder(id)
         }
     }
 }

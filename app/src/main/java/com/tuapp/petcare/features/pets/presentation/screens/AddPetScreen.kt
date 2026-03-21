@@ -180,10 +180,10 @@ fun AddPetScreen(
             OutlinedTextField(
                 value = uiState.birthDate,
                 onValueChange = viewModel::onBirthDateChange,
-                label = { Text("Fecha de nacimiento (YYYY-MM-DD)") },
+                label = { Text("Fecha de nacimiento") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                placeholder = { Text("2022-05-10") }
+                placeholder = { Text("DD/MM/YYYY") }
             )
 
             if (uiState.error != null) {
