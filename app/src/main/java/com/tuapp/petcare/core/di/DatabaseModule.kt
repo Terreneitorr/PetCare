@@ -1,5 +1,6 @@
 package com.tuapp.petcare.core.di
 
+import com.tuapp.petcare.features.profile.data.datasources.local.ProfileDao
 import android.content.Context
 import androidx.room.Room
 import com.tuapp.petcare.features.medical.data.datasources.local.VaccineDao
@@ -17,6 +18,9 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
+
+    @Provides
+    fun provideProfileDao(db: PetCareDatabase): ProfileDao = db.profileDao()
 
     @Provides
     @Singleton

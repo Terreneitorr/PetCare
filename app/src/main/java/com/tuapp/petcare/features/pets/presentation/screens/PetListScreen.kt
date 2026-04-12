@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -24,6 +25,7 @@ fun PetListScreen(
     onAddPet: () -> Unit,
     onPetClick: (String) -> Unit,
     onReminders: () -> Unit,
+    onProfile: () -> Unit,
     viewModel: PetListViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -37,6 +39,12 @@ fun PetListScreen(
                         Icon(
                             imageVector = Icons.Default.Notifications,
                             contentDescription = "Recordatorios"
+                        )
+                    }
+                    IconButton(onClick = onProfile) {
+                        Icon(
+                            imageVector = Icons.Default.AccountCircle,
+                            contentDescription = "Mi perfil"
                         )
                     }
                 }

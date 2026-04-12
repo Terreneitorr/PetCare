@@ -16,6 +16,8 @@ import com.tuapp.petcare.features.medical.presentation.screens.QrScannerScreen
 import com.tuapp.petcare.features.medical.presentation.viewmodels.MedHistoryViewModel
 import com.tuapp.petcare.features.pets.presentation.screens.AddPetScreen
 import com.tuapp.petcare.features.pets.presentation.screens.PetListScreen
+import com.tuapp.petcare.features.profile.presentation.screens.EditProfileScreen
+import com.tuapp.petcare.features.profile.presentation.screens.ProfileScreen
 import com.tuapp.petcare.features.reminders.presentation.screens.RemindersScreen
 import kotlinx.serialization.Serializable
 
@@ -28,6 +30,8 @@ import kotlinx.serialization.Serializable
 @Serializable data class AddVaccineRoute(val petId: String)
 @Serializable data class QrScannerRoute(val petId: String)
 @Serializable object RemindersRoute
+@Serializable object ProfileRoute
+@Serializable data class EditProfileRoute(val userId: String, val email: String)
 
 // ── NavHost principal ─────────────────────────────────────────────────────────
 @Composable
@@ -69,7 +73,8 @@ fun AppNavigation(
                 onPetClick = { petId ->
                     navController.navigate(MedHistoryRoute(petId))
                 },
-                onReminders = { navController.navigate(RemindersRoute) }
+                onReminders = { navController.navigate(RemindersRoute) },
+                onProfile = { navController.navigate(ProfileRoute) }
             )
         }
 
@@ -91,12 +96,7 @@ fun AppNavigation(
 
         composable<AddVaccineRoute> { backStackEntry ->
             val route: AddVaccineRoute = backStackEntry.toRoute()
-
-            // ── ViewModel compartido entre AddVaccine y QrScanner ─────────────
-            // Usamos el backStackEntry de AddVaccineRoute como owner
-            // para que QrScannerScreen use la MISMA instancia
             val viewModel = hiltViewModel<MedHistoryViewModel>(backStackEntry)
-
             AddVaccineScreen(
                 petId = route.petId,
                 onBack = { navController.popBackStack() },
@@ -107,13 +107,10 @@ fun AppNavigation(
 
         composable<QrScannerRoute> { backStackEntry ->
             val route: QrScannerRoute = backStackEntry.toRoute()
-
-            // ── Obtener la misma instancia del ViewModel de AddVaccineRoute ───
             val parentEntry = remember(backStackEntry) {
                 navController.getBackStackEntry<AddVaccineRoute>()
             }
             val viewModel = hiltViewModel<MedHistoryViewModel>(parentEntry)
-
             QrScannerScreen(
                 petId = route.petId,
                 onBack = { navController.popBackStack() },
@@ -124,6 +121,27 @@ fun AppNavigation(
         // REMINDERS — F03
         composable<RemindersRoute> {
             RemindersScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        // PROFILE — MVP1
+        composable<ProfileRoute> {
+            ProfileScreen(
+                onBack = { navController.popBackStack() },
+                onEditProfile = {
+                    // Por ahora usamos valores vacíos
+                    // En producción vendrían del DataStore
+                    navController.navigate(EditProfileRoute("local_user", ""))
+                }
+            )
+        }
+
+        composable<EditProfileRoute> { backStackEntry ->
+            val route: EditProfileRoute = backStackEntry.toRoute()
+            EditProfileScreen(
+                userId = route.userId,
+                email = route.email,
                 onBack = { navController.popBackStack() }
             )
         }

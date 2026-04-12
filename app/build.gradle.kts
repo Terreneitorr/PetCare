@@ -9,7 +9,7 @@ plugins {
 
 android {
     namespace = "com.tuapp.petcare"
-    compileSdk = 36
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.tuapp.petcare"
@@ -35,6 +35,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+
     buildFeatures {
         compose = true
         buildConfig = true
@@ -44,7 +48,6 @@ android {
     productFlavors {
         create("dev") {
             dimension = "environment"
-            // Cambia esta URL por la de tu MockAPI cuando la crees en mockapi.io
             buildConfigField("String", "BASE_URL", "\"http://34.228.172.246:3000/\"")
             resValue("string", "app_name", "PetCare (DEV)")
         }
@@ -60,8 +63,6 @@ ksp {
     arg("hilt.disableModulesHaveInstallInCheck", "true")
     arg("room.schemaLocation", "$projectDir/schemas")
 }
-
-
 
 dependencies {
     implementation(libs.androidx.core.ktx)
@@ -102,6 +103,11 @@ dependencies {
 
     // ML Kit Barcode (QR)
     implementation(libs.mlkit.barcode)
+
+    // WorkManager
+    implementation(libs.work.runtime.ktx)
+    implementation(libs.hilt.work)
+    ksp(libs.hilt.work.compiler)
 
     // Permisos
     implementation(libs.accompanist.permissions)
