@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.tuapp.petcare.features.pets.domain.entities.Pet
 import com.tuapp.petcare.features.pets.presentation.components.PetCard
 import com.tuapp.petcare.features.pets.presentation.viewmodels.PetListViewModel
 
@@ -23,7 +24,7 @@ import com.tuapp.petcare.features.pets.presentation.viewmodels.PetListViewModel
 @Composable
 fun PetListScreen(
     onAddPet: () -> Unit,
-    onPetClick: (String) -> Unit,
+    onPetClick: (Pet) -> Unit,   // ← ahora recibe Pet completo
     onReminders: () -> Unit,
     onProfile: () -> Unit,
     viewModel: PetListViewModel = hiltViewModel()
@@ -36,23 +37,17 @@ fun PetListScreen(
                 title = { Text("Mis mascotas 🐾", fontWeight = FontWeight.Bold) },
                 actions = {
                     IconButton(onClick = onReminders) {
-                        Icon(
-                            imageVector = Icons.Default.Notifications,
-                            contentDescription = "Recordatorios"
-                        )
+                        Icon(Icons.Default.Notifications, "Recordatorios")
                     }
                     IconButton(onClick = onProfile) {
-                        Icon(
-                            imageVector = Icons.Default.AccountCircle,
-                            contentDescription = "Mi perfil"
-                        )
+                        Icon(Icons.Default.AccountCircle, "Mi perfil")
                     }
                 }
             )
         },
         floatingActionButton = {
             FloatingActionButton(onClick = onAddPet) {
-                Icon(Icons.Default.Add, contentDescription = "Agregar mascota")
+                Icon(Icons.Default.Add, "Agregar mascota")
             }
         }
     ) { innerPadding ->
@@ -69,9 +64,7 @@ fun PetListScreen(
                     Text(
                         text = uiState.error!!,
                         color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .padding(16.dp)
+                        modifier = Modifier.align(Alignment.Center).padding(16.dp)
                     )
                 }
                 uiState.pets.isEmpty() -> {
@@ -81,10 +74,7 @@ fun PetListScreen(
                     ) {
                         Text("🐶", style = MaterialTheme.typography.displayMedium)
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            "Aún no tienes mascotas",
-                            style = MaterialTheme.typography.titleMedium
-                        )
+                        Text("Aún no tienes mascotas", style = MaterialTheme.typography.titleMedium)
                         Text(
                             "Toca + para agregar tu primera",
                             style = MaterialTheme.typography.bodySmall,
@@ -100,7 +90,7 @@ fun PetListScreen(
                         items(uiState.pets, key = { it.id }) { pet ->
                             PetCard(
                                 pet = pet,
-                                onClick = { onPetClick(pet.id) },
+                                onClick = { onPetClick(pet) },  // ← pasa mascota completa
                                 onDelete = { viewModel.onDeletePet(pet.id) }
                             )
                         }

@@ -9,6 +9,7 @@ import androidx.work.Constraints
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.tuapp.petcare.core.workers.ProfileSyncWorker
 import com.tuapp.petcare.features.profile.domain.entities.Profile
@@ -16,6 +17,7 @@ import com.tuapp.petcare.features.profile.domain.usecases.GetProfileUseCase
 import com.tuapp.petcare.features.profile.domain.usecases.SaveProfileUseCase
 import com.tuapp.petcare.features.profile.presentation.screens.EditProfileUiState
 import com.tuapp.petcare.features.profile.presentation.screens.ProfileUiState
+import com.tuapp.petcare.features.profile.presentation.screens.SyncStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -40,7 +42,10 @@ class ProfileViewModel @Inject constructor(
     private val _editState = MutableStateFlow(EditProfileUiState())
     val editState = _editState.asStateFlow()
 
-    init { loadProfile() }
+    init {
+        loadProfile()
+        observeWorkManager()
+    }
 
     private fun loadProfile() {
         viewModelScope.launch {
@@ -54,6 +59,25 @@ class ProfileViewModel @Inject constructor(
                             it.copy(name = p.name, phone = p.phone, city = p.city, photoUri = p.photoUri)
                         }
                     }
+                }
+        }
+    }
+
+    // ── Observa el estado del WorkManager en tiempo real ─────────────────────
+    private fun observeWorkManager() {
+        viewModelScope.launch {
+            WorkManager.getInstance(context)
+                .getWorkInfosForUniqueWorkFlow(ProfileSyncWorker.WORK_NAME)
+                .catch { }
+                .collect { workInfos ->
+                    val status = when (workInfos.firstOrNull()?.state) {
+                        WorkInfo.State.RUNNING   -> SyncStatus.SYNCING
+                        WorkInfo.State.SUCCEEDED -> SyncStatus.SUCCESS
+                        WorkInfo.State.FAILED    -> SyncStatus.ERROR
+                        WorkInfo.State.ENQUEUED  -> SyncStatus.SYNCING
+                        else                     -> SyncStatus.IDLE
+                    }
+                    _profileState.update { it.copy(syncStatus = status) }
                 }
         }
     }

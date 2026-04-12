@@ -5,8 +5,16 @@ import com.tuapp.petcare.features.profile.domain.entities.Profile
 data class ProfileUiState(
     val profile: Profile? = null,
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val syncStatus: SyncStatus = SyncStatus.IDLE
 )
+
+enum class SyncStatus {
+    IDLE,       // Sin actividad
+    SYNCING,    // Sincronizando ahora
+    SUCCESS,    // Sincronización exitosa
+    ERROR       // Error al sincronizar
+}
 
 data class EditProfileUiState(
     val name: String = "",

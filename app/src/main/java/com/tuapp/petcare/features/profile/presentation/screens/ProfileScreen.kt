@@ -1,6 +1,5 @@
 package com.tuapp.petcare.features.profile.presentation.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -8,6 +7,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.filled.SyncProblem
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -65,9 +67,7 @@ fun ProfileScreen(
                         Spacer(modifier = Modifier.height(8.dp))
                         Text("Sin perfil configurado", style = MaterialTheme.typography.titleMedium)
                         Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = onEditProfile) {
-                            Text("Crear perfil")
-                        }
+                        Button(onClick = onEditProfile) { Text("Crear perfil") }
                     }
                 }
                 else -> {
@@ -85,9 +85,7 @@ fun ProfileScreen(
                             AsyncImage(
                                 model = profile.photoUri,
                                 contentDescription = "Foto de perfil",
-                                modifier = Modifier
-                                    .size(110.dp)
-                                    .clip(CircleShape),
+                                modifier = Modifier.size(110.dp).clip(CircleShape),
                                 contentScale = ContentScale.Crop
                             )
                         } else {
@@ -106,21 +104,17 @@ fun ProfileScreen(
                         }
 
                         Spacer(modifier = Modifier.height(16.dp))
+                        Text(profile.name, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                        Text(profile.email, style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
 
-                        Text(
-                            text = profile.name,
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = profile.email,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                        )
+                        Spacer(modifier = Modifier.height(16.dp))
 
-                        Spacer(modifier = Modifier.height(32.dp))
+                        // ── Banner de estado WorkManager ──────────────────────
+                        WorkManagerStatusBanner(status = uiState.syncStatus)
 
-                        // Tarjetas de info
+                        Spacer(modifier = Modifier.height(16.dp))
+
                         ProfileInfoCard(label = "Teléfono", value = profile.phone.ifBlank { "No registrado" })
                         Spacer(modifier = Modifier.height(12.dp))
                         ProfileInfoCard(label = "Ciudad", value = profile.city.ifBlank { "No registrada" })
@@ -142,6 +136,44 @@ fun ProfileScreen(
     }
 }
 
+// ── Banner que muestra el estado del WorkManager ──────────────────────────────
+@Composable
+private fun WorkManagerStatusBanner(status: SyncStatus) {
+    val (icon, text, color) = when (status) {
+        SyncStatus.SYNCING -> Triple(
+            Icons.Default.Sync,
+            "Sincronizando perfil con el servidor...",
+            MaterialTheme.colorScheme.primary
+        )
+        SyncStatus.SUCCESS -> Triple(
+            Icons.Default.CheckCircle,
+            "Perfil sincronizado correctamente ✓",
+            MaterialTheme.colorScheme.tertiary
+        )
+        SyncStatus.ERROR -> Triple(
+            Icons.Default.SyncProblem,
+            "Error al sincronizar — reintentando...",
+            MaterialTheme.colorScheme.error
+        )
+        SyncStatus.IDLE -> return
+    }
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(10.dp),
+        color = color.copy(alpha = 0.12f)
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
+            Text(text, style = MaterialTheme.typography.bodySmall, color = color)
+        }
+    }
+}
+
 @Composable
 private fun ProfileInfoCard(label: String, value: String) {
     Card(
@@ -150,17 +182,9 @@ private fun ProfileInfoCard(label: String, value: String) {
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.primary
-            )
+            Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
             Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = value,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium
-            )
+            Text(value, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
         }
     }
 }

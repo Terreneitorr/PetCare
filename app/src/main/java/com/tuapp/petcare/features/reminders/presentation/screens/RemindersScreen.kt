@@ -12,10 +12,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -65,41 +67,78 @@ fun RemindersScreen(
             }
         }
     ) { innerPadding ->
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            when {
-                uiState.isLoading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                }
-                uiState.reminders.isEmpty() -> {
-                    Column(
-                        modifier = Modifier.align(Alignment.Center),
-                        horizontalAlignment = Alignment.CenterHorizontally
+            // ── Banner de alertas próximas 24h ────────────────────────────
+            val now = System.currentTimeMillis()
+            val limit = now + 24 * 60 * 60 * 1000L
+            val proximosCount = uiState.reminders.count {
+                it.isActive &&
+                        it.triggerAtMillis in now..limit
+            }
+            if (proximosCount > 0) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(0.dp),
+                    color = MaterialTheme.colorScheme.errorContainer
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text("🔔", style = MaterialTheme.typography.displayMedium)
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text("Sin recordatorios activos", style = MaterialTheme.typography.titleMedium)
+                        Icon(
+                            Icons.Default.Notifications,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(18.dp)
+                        )
                         Text(
-                            "Toca + para programar uno",
+                            "⚠️ $proximosCount recordatorio(s) en las próximas 24 horas",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            fontWeight = FontWeight.Medium
                         )
                     }
                 }
-                else -> {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(vertical = 8.dp)
-                    ) {
-                        items(uiState.reminders, key = { it.id }) { reminder ->
-                            ReminderCard(
-                                reminder = reminder,
-                                onCancel = { viewModel.onCancelReminder(reminder.id) },
-                                onDelete = { viewModel.onDeleteReminder(reminder.id) }
+            }
+
+            // ── Contenido principal ───────────────────────────────────────
+            Box(modifier = Modifier.fillMaxSize()) {
+                when {
+                    uiState.isLoading -> {
+                        CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                    }
+                    uiState.reminders.isEmpty() -> {
+                        Column(
+                            modifier = Modifier.align(Alignment.Center),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text("🔔", style = MaterialTheme.typography.displayMedium)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text("Sin recordatorios activos", style = MaterialTheme.typography.titleMedium)
+                            Text(
+                                "Toca + para programar uno",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                             )
+                        }
+                    }
+                    else -> {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(vertical = 8.dp)
+                        ) {
+                            items(uiState.reminders, key = { it.id }) { reminder ->
+                                ReminderCard(
+                                    reminder = reminder,
+                                    onCancel = { viewModel.onCancelReminder(reminder.id) },
+                                    onDelete = { viewModel.onDeleteReminder(reminder.id) }
+                                )
+                            }
                         }
                     }
                 }
@@ -149,12 +188,9 @@ private fun AddReminderDialog(
     var selectedMonth  by remember { mutableIntStateOf(now.get(Calendar.MONTH)) }
     var selectedYear   by remember { mutableIntStateOf(now.get(Calendar.YEAR)) }
 
-    // Estado local de texto para minutos — evita el cuatrapeo
     var minuteText by remember {
         mutableStateOf(now.get(Calendar.MINUTE).toString().padStart(2, '0'))
     }
-
-    // Estado local de texto para fecha con separador automático
     var dateText by remember { mutableStateOf("") }
 
     val displayHour = when {
@@ -164,7 +200,6 @@ private fun AddReminderDialog(
     }
     val amPm = if (selectedHour < 12) "AM" else "PM"
 
-    // Actualiza el timestamp cuando cambia cualquier valor
     LaunchedEffect(selectedHour, selectedMinute, selectedDay, selectedMonth, selectedYear) {
         val cal = Calendar.getInstance().apply {
             set(selectedYear, selectedMonth, selectedDay, selectedHour, selectedMinute, 0)
@@ -173,7 +208,6 @@ private fun AddReminderDialog(
         onMillis(cal.timeInMillis)
     }
 
-    // Parsea la fecha cuando cambia dateText
     LaunchedEffect(dateText) {
         val digits = dateText.filter { it.isDigit() }
         if (digits.length >= 2)
@@ -213,8 +247,6 @@ private fun AddReminderDialog(
                     modifier = Modifier.fillMaxWidth(),
                     maxLines = 3
                 )
-
-                // Fecha con separador automático DD/MM/YYYY
                 OutlinedTextField(
                     value = dateText,
                     onValueChange = { input ->
@@ -231,18 +263,15 @@ private fun AddReminderDialog(
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
-
                 Text(
                     "Hora (formato 12h):",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                 )
-
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Campo hora
                     OutlinedTextField(
                         value = displayHour.toString(),
                         onValueChange = { input ->
@@ -257,21 +286,17 @@ private fun AddReminderDialog(
                         modifier = Modifier.weight(1f),
                         singleLine = true
                     )
-                    // Campo minutos — estado local para evitar cuatrapeo
                     OutlinedTextField(
                         value = minuteText,
                         onValueChange = { input ->
                             val clean = input.filter { it.isDigit() }.take(2)
                             minuteText = clean
-                            clean.toIntOrNull()?.coerceIn(0, 59)?.let {
-                                selectedMinute = it
-                            }
+                            clean.toIntOrNull()?.coerceIn(0, 59)?.let { selectedMinute = it }
                         },
                         label = { Text("Min") },
                         modifier = Modifier.weight(1f),
                         singleLine = true
                     )
-                    // Botón AM/PM
                     FilledTonalButton(
                         onClick = {
                             selectedHour = if (selectedHour < 12) selectedHour + 12
@@ -282,7 +307,6 @@ private fun AddReminderDialog(
                         Text(amPm, fontWeight = FontWeight.Bold)
                     }
                 }
-
                 if (uiState.saveError != null) {
                     Text(
                         text = uiState.saveError,
