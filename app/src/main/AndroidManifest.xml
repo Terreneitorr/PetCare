@@ -9,6 +9,8 @@
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
     <application
         android:name=".PetCareApp"
@@ -22,7 +24,6 @@
         android:theme="@style/Theme.PetCare"
         android:usesCleartextTraffic="true"
         tools:targetApi="31">
-
 
         <activity
             android:name=".MainActivity"
@@ -56,6 +57,12 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
+
+        <!-- Foreground Service — MVP2 Citas veterinarias -->
+        <service
+            android:name=".core.services.AppointmentCountdownService"
+            android:foregroundServiceType="dataSync"
+            android:exported="false" />
 
     </application>
 

@@ -9,3 +9,4 @@ data class Pet(
     val photoUri: String,  // URI local o URL remota
     val ownerId: String
 )
+
