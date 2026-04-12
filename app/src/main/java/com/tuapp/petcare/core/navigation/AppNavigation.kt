@@ -8,6 +8,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.tuapp.petcare.features.appointments.presentation.screens.AddAppointmentScreen
+import com.tuapp.petcare.features.appointments.presentation.screens.AppointmentsScreen
 import com.tuapp.petcare.features.auth.presentation.screens.LoginScreen
 import com.tuapp.petcare.features.auth.presentation.screens.RegisterScreen
 import com.tuapp.petcare.features.medical.presentation.screens.AddVaccineScreen
@@ -32,6 +34,8 @@ import kotlinx.serialization.Serializable
 @Serializable object RemindersRoute
 @Serializable object ProfileRoute
 @Serializable data class EditProfileRoute(val userId: String, val email: String)
+@Serializable data class AppointmentsRoute(val petId: String, val petName: String)
+@Serializable data class AddAppointmentRoute(val petId: String, val petName: String)
 
 // ── NavHost principal ─────────────────────────────────────────────────────────
 @Composable
@@ -79,9 +83,7 @@ fun AppNavigation(
         }
 
         composable<AddPetRoute> {
-            AddPetScreen(
-                onBack = { navController.popBackStack() }
-            )
+            AddPetScreen(onBack = { navController.popBackStack() })
         }
 
         // MEDICAL — F02
@@ -90,7 +92,10 @@ fun AppNavigation(
             MedHistoryScreen(
                 petId = route.petId,
                 onBack = { navController.popBackStack() },
-                onAddVaccine = { navController.navigate(AddVaccineRoute(route.petId)) }
+                onAddVaccine = { navController.navigate(AddVaccineRoute(route.petId)) },
+                onAppointments = {
+                    navController.navigate(AppointmentsRoute(route.petId, "Mi mascota"))
+                }
             )
         }
 
@@ -120,9 +125,7 @@ fun AppNavigation(
 
         // REMINDERS — F03
         composable<RemindersRoute> {
-            RemindersScreen(
-                onBack = { navController.popBackStack() }
-            )
+            RemindersScreen(onBack = { navController.popBackStack() })
         }
 
         // PROFILE — MVP1
@@ -130,8 +133,6 @@ fun AppNavigation(
             ProfileScreen(
                 onBack = { navController.popBackStack() },
                 onEditProfile = {
-                    // Por ahora usamos valores vacíos
-                    // En producción vendrían del DataStore
                     navController.navigate(EditProfileRoute("local_user", ""))
                 }
             )
@@ -142,6 +143,30 @@ fun AppNavigation(
             EditProfileScreen(
                 userId = route.userId,
                 email = route.email,
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        // APPOINTMENTS — MVP2
+        composable<AppointmentsRoute> { backStackEntry ->
+            val route: AppointmentsRoute = backStackEntry.toRoute()
+            AppointmentsScreen(
+                petId = route.petId,
+                petName = route.petName,
+                onBack = { navController.popBackStack() },
+                onAddAppointment = {
+                    navController.navigate(
+                        AddAppointmentRoute(route.petId, route.petName)
+                    )
+                }
+            )
+        }
+
+        composable<AddAppointmentRoute> { backStackEntry ->
+            val route: AddAppointmentRoute = backStackEntry.toRoute()
+            AddAppointmentScreen(
+                petId = route.petId,
+                petName = route.petName,
                 onBack = { navController.popBackStack() }
             )
         }

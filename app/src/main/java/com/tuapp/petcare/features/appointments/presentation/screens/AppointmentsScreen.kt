@@ -1,4 +1,4 @@
-package com.tuapp.petcare.features.medical.presentation.screens
+package com.tuapp.petcare.features.appointments.presentation.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -14,34 +14,31 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.tuapp.petcare.features.medical.presentation.components.VaccineCard
-import com.tuapp.petcare.features.medical.presentation.viewmodels.MedHistoryViewModel
-import androidx.compose.material.icons.filled.Event
+import com.tuapp.petcare.features.appointments.presentation.components.AppointmentCard
+import com.tuapp.petcare.features.appointments.presentation.viewmodels.AppointmentsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MedHistoryScreen(
+fun AppointmentsScreen(
     petId: String,
+    petName: String,
     onBack: () -> Unit,
-    onAddVaccine: () -> Unit,
-    onAppointments: () -> Unit,
-    viewModel: MedHistoryViewModel = hiltViewModel()
+    onAddAppointment: () -> Unit,
+    viewModel: AppointmentsViewModel = hiltViewModel()
 ) {
-    val uiState by viewModel.historyState.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(petId) {
-        viewModel.loadVaccines(petId)
+        viewModel.loadAppointments(petId)
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-
-                title = { Text("Historial médico", fontWeight = FontWeight.Bold) },
+                title = {
+                    Text("Citas — $petName", fontWeight = FontWeight.Bold)
+                },
                 navigationIcon = {
-                    IconButton(onClick = onAppointments) {
-                        Icon(Icons.Default.Event, "Citas veterinarias")
-                    }
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Regresar")
                     }
@@ -49,8 +46,8 @@ fun MedHistoryScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = onAddVaccine) {
-                Icon(Icons.Default.Add, "Agregar vacuna")
+            FloatingActionButton(onClick = onAddAppointment) {
+                Icon(Icons.Default.Add, "Nueva cita")
             }
         }
     ) { innerPadding ->
@@ -63,25 +60,16 @@ fun MedHistoryScreen(
                 uiState.isLoading -> {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 }
-                uiState.error != null -> {
-                    Text(
-                        text = uiState.error!!,
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .padding(16.dp)
-                    )
-                }
-                uiState.vaccines.isEmpty() -> {
+                uiState.appointments.isEmpty() -> {
                     Column(
                         modifier = Modifier.align(Alignment.Center),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text("💉", style = MaterialTheme.typography.displayMedium)
+                        Text("📅", style = MaterialTheme.typography.displayMedium)
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text("Sin registros médicos", style = MaterialTheme.typography.titleMedium)
+                        Text("Sin citas programadas", style = MaterialTheme.typography.titleMedium)
                         Text(
-                            "Toca + para agregar una vacuna",
+                            "Toca + para agendar una cita",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                         )
@@ -92,10 +80,11 @@ fun MedHistoryScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(vertical = 8.dp)
                     ) {
-                        items(uiState.vaccines, key = { it.id }) { vaccine ->
-                            VaccineCard(
-                                vaccine = vaccine,
-                                onDelete = { viewModel.onDeleteVaccine(vaccine.id) }
+                        items(uiState.appointments, key = { it.id }) { appointment ->
+                            AppointmentCard(
+                                appointment = appointment,
+                                onComplete = { viewModel.onCompleteAppointment(appointment.id) },
+                                onDelete = { viewModel.onDeleteAppointment(appointment.id) }
                             )
                         }
                     }
