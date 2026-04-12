@@ -25,6 +25,7 @@
         android:usesCleartextTraffic="true"
         tools:targetApi="31">
 
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -57,6 +58,15 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
+
+        <!-- Firebase FCM — MVP3 Push Notifications -->
+        <service
+            android:name=".core.services.PetCareFCMService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
 
         <!-- Foreground Service — MVP2 Citas veterinarias -->
         <service
