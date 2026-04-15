@@ -19,7 +19,6 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.tuapp.petcare.features.weight.domain.entities.WeightRecord
@@ -143,10 +142,8 @@ private fun WeightChart(records: List<WeightRecord>) {
                 val h = size.height
                 val pad = 20f
 
-                // Fondo
                 drawRect(color = surfaceColor, size = size)
 
-                // Línea de la gráfica
                 val path = Path()
                 records.forEachIndexed { i, record ->
                     val x = pad + (i.toFloat() / (records.size - 1)) * (w - 2 * pad)
@@ -155,7 +152,6 @@ private fun WeightChart(records: List<WeightRecord>) {
                 }
                 drawPath(path = path, color = primaryColor, style = Stroke(width = 3f))
 
-                // Puntos
                 records.forEachIndexed { i, record ->
                     val x = pad + (i.toFloat() / (records.size - 1)) * (w - 2 * pad)
                     val y = h - pad - ((record.weightKg - minW) / range) * (h - 2 * pad)
@@ -216,27 +212,37 @@ private fun AgeCalculatorCard(species: String, birthDate: String, petName: Strin
                     val smallAge = dogAgeSmallMedium(humanAge)
                     val largeAge = dogAgeLarge(humanAge)
                     val giantAge = dogAgeGiant(humanAge)
-                    Text("🐕 Perro pequeño/mediano: $smallAge años",
+                    Text(
+                        "🐕 Perro pequeño/mediano: $smallAge años",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer)
-                    Text("🐕 Perro grande: $largeAge años",
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                    Text(
+                        "🐕 Perro grande: $largeAge años",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer)
-                    Text("🐕 Perro gigante: $giantAge años",
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                    Text(
+                        "🐕 Perro gigante: $giantAge años",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer)
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
                 }
                 "gato" -> {
                     val catAge = catAge(humanAge)
-                    Text("🐱 Edad equivalente en gato: $catAge años",
+                    Text(
+                        "🐱 Edad equivalente en gato: $catAge años",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer)
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
                 }
                 "conejo" -> {
                     val rabbitAge = rabbitAge(humanAge)
-                    Text("🐰 Edad equivalente en conejo: $rabbitAge años",
+                    Text(
+                        "🐰 Edad equivalente en conejo: $rabbitAge años",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer)
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
                 }
                 else -> {
                     Text(
@@ -300,11 +306,30 @@ private fun WeightRecordCard(record: WeightRecord, onDelete: () -> Unit) {
 // ── Funciones de cálculo de edad ──────────────────────────────────────────────
 private fun calculateHumanAge(birthDate: String): Int {
     return try {
-        val parts = birthDate.split("-")
-        if (parts.size < 3) return 0
-        val birthYear = parts[0].toInt()
-        val currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
-        currentYear - birthYear
+        if (birthDate.isBlank()) return 0
+        val parts = when {
+            birthDate.contains("/") -> {
+                // Formato DD/MM/YYYY
+                val p = birthDate.split("/")
+                if (p.size < 3) return 0
+                Triple(p[2].toInt(), p[1].toInt(), p[0].toInt())
+            }
+            birthDate.contains("-") -> {
+                // Formato YYYY-MM-DD
+                val p = birthDate.split("-")
+                if (p.size < 3) return 0
+                Triple(p[0].toInt(), p[1].toInt(), p[2].toInt())
+            }
+            else -> return 0
+        }
+        val birthYear  = parts.first
+        val birthMonth = parts.second
+        val cal = java.util.Calendar.getInstance()
+        val currentYear  = cal.get(java.util.Calendar.YEAR)
+        val currentMonth = cal.get(java.util.Calendar.MONTH) + 1
+        var age = currentYear - birthYear
+        if (currentMonth < birthMonth) age--
+        if (age < 0) 0 else age
     } catch (e: Exception) { 0 }
 }
 

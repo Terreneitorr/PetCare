@@ -34,16 +34,16 @@ class PetCareApp : Application(), Configuration.Provider {
             .setRequiredNetworkType(NetworkType.NOT_REQUIRED)
             .build()
 
-        // Revisa cada 1 hora si hay vacunas, citas o recordatorios próximos
+        // 15 minutos es el mínimo permitido por Android para PeriodicWork
         val alertRequest = PeriodicWorkRequestBuilder<AlertCheckWorker>(
-            1, TimeUnit.HOURS
+            15, TimeUnit.MINUTES
         )
             .setConstraints(constraints)
             .build()
 
         WorkManager.getInstance(this).enqueueUniquePeriodicWork(
             AlertCheckWorker.WORK_NAME,
-            ExistingPeriodicWorkPolicy.KEEP,
+            ExistingPeriodicWorkPolicy.UPDATE, // UPDATE en lugar de KEEP para aplicar el nuevo intervalo
             alertRequest
         )
     }

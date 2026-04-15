@@ -45,7 +45,6 @@ fun AddAppointmentScreen(
         }
     }
 
-    // Recalcula el timestamp cuando cambia fecha u hora
     LaunchedEffect(dateText, selectedHour, selectedMinute) {
         val digits = dateText.filter { it.isDigit() }
         if (digits.length >= 8) {
@@ -109,7 +108,7 @@ fun AddAppointmentScreen(
             )
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Fecha con separador automático
+            // ── Campo de fecha corregido ──────────────────────────────────
             OutlinedTextField(
                 value = dateText,
                 onValueChange = { input ->
@@ -128,7 +127,6 @@ fun AddAppointmentScreen(
             )
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Hora con AM/PM
             Text(
                 "Hora (formato 12h):",
                 style = MaterialTheme.typography.labelMedium,

@@ -42,25 +42,29 @@ class AppointmentsViewModel @Inject constructor(
                 .catch { e -> _uiState.update { it.copy(isLoading = false, error = e.message) } }
                 .collect { list ->
                     _uiState.update { it.copy(isLoading = false, appointments = list) }
-                    // Si hay citas próximas arranca el Foreground Service
-                    if (list.any {
-                            !it.isCompleted &&
-                                    it.dateTimeMillis > System.currentTimeMillis() &&
-                                    it.dateTimeMillis < System.currentTimeMillis() + 24 * 60 * 60 * 1000L
-                        }) {
+                    // Solo gestiona el Foreground Service — la notificación
+                    // la maneja AlarmManager, no este collect
+                    val hayProximas = list.any {
+                        !it.isCompleted &&
+                                it.dateTimeMillis > System.currentTimeMillis() &&
+                                it.dateTimeMillis < System.currentTimeMillis() + 24 * 60 * 60 * 1000L
+                    }
+                    if (hayProximas) {
                         AppointmentCountdownService.startService(context)
+                    } else {
+                        AppointmentCountdownService.stopService(context)
                     }
                 }
         }
     }
 
-    fun onTitleChange(v: String)       = _addState.update { it.copy(title = v, error = null) }
-    fun onDescriptionChange(v: String) = _addState.update { it.copy(description = v) }
-    fun onVetChange(v: String)         = _addState.update { it.copy(veterinarian = v) }
+    fun onTitleChange(v: String)        = _addState.update { it.copy(title = v, error = null) }
+    fun onDescriptionChange(v: String)  = _addState.update { it.copy(description = v) }
+    fun onVetChange(v: String)          = _addState.update { it.copy(veterinarian = v) }
     fun onDateTimeMillisChange(v: Long) = _addState.update { it.copy(dateTimeMillis = v) }
-    fun onDateTextChange(v: String)    = _addState.update { it.copy(dateText = v) }
-    fun onHourTextChange(v: String)    = _addState.update { it.copy(hourText = v) }
-    fun onMinuteTextChange(v: String)  = _addState.update { it.copy(minuteText = v) }
+    fun onDateTextChange(v: String)     = _addState.update { it.copy(dateText = v) }
+    fun onHourTextChange(v: String)     = _addState.update { it.copy(hourText = v) }
+    fun onMinuteTextChange(v: String)   = _addState.update { it.copy(minuteText = v) }
     fun onAmPmToggle() = _addState.update {
         it.copy(amPm = if (it.amPm == "AM") "PM" else "AM")
     }
@@ -71,18 +75,20 @@ class AppointmentsViewModel @Inject constructor(
             val s = _addState.value
             val result = addAppointmentUseCase(
                 Appointment(
-                    id            = "",
-                    petId         = petId,
-                    petName       = petName,
-                    title         = s.title,
-                    description   = s.description,
-                    veterinarian  = s.veterinarian,
+                    id             = "",
+                    petId          = petId,
+                    petName        = petName,
+                    title          = s.title,
+                    description    = s.description,
+                    veterinarian   = s.veterinarian,
                     dateTimeMillis = s.dateTimeMillis
                 )
             )
             result.fold(
                 onSuccess = {
                     _addState.update { it.copy(isLoading = false, isSuccess = true) }
+                    // La alarma ya se programó en AppointmentsRepositoryImpl
+                    // No necesitamos hacer nada más aquí
                 },
                 onFailure = { e ->
                     _addState.update { it.copy(isLoading = false, error = e.message) }

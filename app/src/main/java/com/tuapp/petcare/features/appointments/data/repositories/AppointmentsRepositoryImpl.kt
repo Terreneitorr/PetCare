@@ -1,5 +1,6 @@
 package com.tuapp.petcare.features.appointments.data.repositories
 
+import com.tuapp.petcare.features.appointments.data.AppointmentAlarmScheduler
 import com.tuapp.petcare.features.appointments.data.datasources.local.AppointmentDao
 import com.tuapp.petcare.features.appointments.data.datasources.local.toDomain
 import com.tuapp.petcare.features.appointments.data.datasources.local.toEntity
@@ -10,7 +11,8 @@ import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
 class AppointmentsRepositoryImpl @Inject constructor(
-    private val appointmentDao: AppointmentDao
+    private val appointmentDao: AppointmentDao,
+    private val alarmScheduler: AppointmentAlarmScheduler
 ) : AppointmentsRepository {
 
     override fun getAppointmentsByPet(petId: String): Flow<List<Appointment>> =
@@ -23,12 +25,23 @@ class AppointmentsRepositoryImpl @Inject constructor(
             .map { list -> list.map { it.toDomain() } }
     }
 
-    override suspend fun addAppointment(appointment: Appointment) =
+    override suspend fun addAppointment(appointment: Appointment) {
         appointmentDao.insertAppointment(appointment.toEntity())
+        // Programa alarma 24h antes
+        alarmScheduler.scheduleAppointmentAlert(
+            appointmentId = appointment.id,
+            petName       = appointment.petName,
+            title         = appointment.title,
+            veterinarian  = appointment.veterinarian,
+            dateTimeMillis = appointment.dateTimeMillis
+        )
+    }
 
     override suspend fun completeAppointment(id: String) =
         appointmentDao.completeAppointment(id)
 
-    override suspend fun deleteAppointment(id: String) =
+    override suspend fun deleteAppointment(id: String) {
+        alarmScheduler.cancelAppointmentAlert(id)
         appointmentDao.deleteAppointment(id)
+    }
 }

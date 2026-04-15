@@ -4,14 +4,12 @@ import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.work.BackoffPolicy
-import androidx.work.Constraints
 import androidx.work.ExistingWorkPolicy
-import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.tuapp.petcare.core.workers.ProfileSyncWorker
+import com.tuapp.petcare.features.auth.domain.repositories.AuthRepository
 import com.tuapp.petcare.features.profile.domain.entities.Profile
 import com.tuapp.petcare.features.profile.domain.usecases.GetProfileUseCase
 import com.tuapp.petcare.features.profile.domain.usecases.SaveProfileUseCase
@@ -26,13 +24,13 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.File
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val getProfileUseCase: GetProfileUseCase,
     private val saveProfileUseCase: SaveProfileUseCase,
+    private val authRepository: AuthRepository,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -41,6 +39,9 @@ class ProfileViewModel @Inject constructor(
 
     private val _editState = MutableStateFlow(EditProfileUiState())
     val editState = _editState.asStateFlow()
+
+    private val _logoutState = MutableStateFlow(false)
+    val logoutState = _logoutState.asStateFlow()
 
     init {
         loadProfile()
@@ -63,7 +64,6 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
-    // ── Observa el estado del WorkManager en tiempo real ─────────────────────
     private fun observeWorkManager() {
         viewModelScope.launch {
             WorkManager.getInstance(context)
@@ -73,8 +73,9 @@ class ProfileViewModel @Inject constructor(
                     val status = when (workInfos.firstOrNull()?.state) {
                         WorkInfo.State.RUNNING   -> SyncStatus.SYNCING
                         WorkInfo.State.SUCCEEDED -> SyncStatus.SUCCESS
-                        WorkInfo.State.FAILED    -> SyncStatus.ERROR
+                        WorkInfo.State.FAILED    -> SyncStatus.IDLE
                         WorkInfo.State.ENQUEUED  -> SyncStatus.SYNCING
+                        WorkInfo.State.BLOCKED   -> SyncStatus.SYNCING
                         else                     -> SyncStatus.IDLE
                     }
                     _profileState.update { it.copy(syncStatus = status) }
@@ -124,19 +125,25 @@ class ProfileViewModel @Inject constructor(
     }
 
     private fun scheduleSyncWork() {
-        val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.CONNECTED)
-            .build()
-        val syncRequest = OneTimeWorkRequestBuilder<ProfileSyncWorker>()
-            .setConstraints(constraints)
-            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 15, TimeUnit.SECONDS)
-            .build()
-        WorkManager.getInstance(context).enqueueUniqueWork(
+        val workManager = WorkManager.getInstance(context)
+        workManager.cancelUniqueWork(ProfileSyncWorker.WORK_NAME)
+        val syncRequest = OneTimeWorkRequestBuilder<ProfileSyncWorker>().build()
+        workManager.enqueueUniqueWork(
             ProfileSyncWorker.WORK_NAME,
             ExistingWorkPolicy.REPLACE,
             syncRequest
         )
     }
+
+    // ── Cerrar sesión ─────────────────────────────────────────────────────────
+    fun onLogout() {
+        viewModelScope.launch {
+            authRepository.clearSession()  // Borra el token del DataStore
+            _logoutState.update { true }   // Notifica a la UI que debe navegar al login
+        }
+    }
+
+    fun resetLogout() = _logoutState.update { false }
 
     fun resetEditSuccess() = _editState.update { it.copy(isSuccess = false) }
 }

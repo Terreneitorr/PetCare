@@ -48,20 +48,15 @@ fun AddPetScreen(
         if (uiState.isSuccess) onBack()
     }
 
-    // Permiso de cámara
     val cameraPermission = rememberPermissionState(android.Manifest.permission.CAMERA)
-
-    // URI temporal para la foto de cámara
     var cameraUri by remember { mutableStateOf<Uri?>(null) }
 
-    // Launcher para tomar foto con cámara
     val cameraLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.TakePicture()
     ) { success ->
         if (success) cameraUri?.let { viewModel.onPhotoSelected(it) }
     }
 
-    // Launcher para seleccionar de galería
     val galleryLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.GetContent()
     ) { uri ->
@@ -92,7 +87,6 @@ fun AddPetScreen(
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
-            // ── Foto ─────────────────────────────────────────────────────────
             Box(
                 modifier = Modifier
                     .size(110.dp)
@@ -123,7 +117,6 @@ fun AddPetScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // ── Campos ───────────────────────────────────────────────────────
             OutlinedTextField(
                 value = uiState.name,
                 onValueChange = viewModel::onNameChange,
@@ -135,7 +128,6 @@ fun AddPetScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Dropdown especie
             ExposedDropdownMenuBox(
                 expanded = uiState.showSpeciesDropdown,
                 onExpandedChange = { viewModel.onToggleDropdown() }
@@ -177,9 +169,14 @@ fun AddPetScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
+            // ── Campo de fecha corregido ──────────────────────────────────
             OutlinedTextField(
                 value = uiState.birthDate,
-                onValueChange = viewModel::onBirthDateChange,
+                onValueChange = { input ->
+                    // Filtra solo dígitos para reconstruir desde cero
+                    val digits = input.filter { it.isDigit() }.take(8)
+                    viewModel.onBirthDateChange(digits)
+                },
                 label = { Text("Fecha de nacimiento") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
@@ -219,7 +216,6 @@ fun AddPetScreen(
         }
     }
 
-    // ── Dialog foto ──────────────────────────────────────────────────────────
     if (showPhotoDialog) {
         AlertDialog(
             onDismissRequest = { showPhotoDialog = false },

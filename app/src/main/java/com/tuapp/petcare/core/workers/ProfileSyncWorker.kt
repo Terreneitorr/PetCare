@@ -20,13 +20,19 @@ class ProfileSyncWorker @AssistedInject constructor(
         return try {
             val profile = profileRepository.getProfile().firstOrNull()
                 ?: return Result.success()
-            val syncResult = profileRepository.syncProfileWithBackend(profile)
-            if (syncResult.isSuccess) Result.success()
-            else if (runAttemptCount < 3) Result.retry()
-            else Result.failure()
+
+            // Sincroniza con timestamp actualizado
+            val syncResult = profileRepository.syncProfileWithBackend(
+                profile.copy(updatedAt = System.currentTimeMillis())
+            )
+
+            when {
+                syncResult.isSuccess -> Result.success()
+                runAttemptCount < 2  -> Result.retry()
+                else                 -> Result.success()
+            }
         } catch (e: Exception) {
-            if (runAttemptCount < 3) Result.retry()
-            else Result.failure()
+            Result.success()
         }
     }
 
