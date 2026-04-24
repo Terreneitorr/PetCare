@@ -21,30 +21,37 @@ class PetCareApp : Application(), Configuration.Provider {
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
+            .setMinimumLoggingLevel(android.util.Log.DEBUG)
             .setWorkerFactory(workerFactory)
             .build()
 
     override fun onCreate() {
         super.onCreate()
+        // WorkManager se inicializa automáticamente con workManagerConfiguration
+        // Programamos el worker después de que Hilt haya inyectado todo
         scheduleAlertCheck()
     }
 
     private fun scheduleAlertCheck() {
-        val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.NOT_REQUIRED)
-            .build()
+        try {
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.NOT_REQUIRED)
+                .build()
 
-        // 15 minutos es el mínimo permitido por Android para PeriodicWork
-        val alertRequest = PeriodicWorkRequestBuilder<AlertCheckWorker>(
-            15, TimeUnit.MINUTES
-        )
-            .setConstraints(constraints)
-            .build()
+            val alertRequest = PeriodicWorkRequestBuilder<AlertCheckWorker>(
+                15, TimeUnit.MINUTES
+            )
+                .setConstraints(constraints)
+                .addTag(AlertCheckWorker.WORK_NAME)
+                .build()
 
-        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
-            AlertCheckWorker.WORK_NAME,
-            ExistingPeriodicWorkPolicy.UPDATE, // UPDATE en lugar de KEEP para aplicar el nuevo intervalo
-            alertRequest
-        )
+            WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+                AlertCheckWorker.WORK_NAME,
+                ExistingPeriodicWorkPolicy.UPDATE,
+                alertRequest
+            )
+        } catch (e: Exception) {
+            android.util.Log.e("PetCareApp", "Error scheduling AlertCheckWorker: ${e.message}")
+        }
     }
 }

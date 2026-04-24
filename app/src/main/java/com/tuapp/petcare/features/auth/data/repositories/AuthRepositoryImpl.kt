@@ -9,6 +9,7 @@ import com.tuapp.petcare.features.auth.data.datasources.remote.mapper.toDomain
 import com.tuapp.petcare.features.auth.data.datasources.remote.models.LoginRequestDto
 import com.tuapp.petcare.features.auth.data.datasources.remote.models.RegisterRequestDto
 import com.tuapp.petcare.features.auth.domain.entities.User
+import com.tuapp.petcare.features.auth.domain.entities.UserRole
 import com.tuapp.petcare.features.auth.domain.repositories.AuthRepository
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
@@ -21,6 +22,7 @@ class AuthRepositoryImpl @Inject constructor(
 
     companion object {
         private val TOKEN_KEY = stringPreferencesKey("auth_token")
+        private val ROLE_KEY  = stringPreferencesKey("user_role")
     }
 
     override suspend fun login(email: String, password: String): Result<User> {
@@ -46,10 +48,25 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun clearSession() {
-        dataStore.edit { prefs -> prefs.remove(TOKEN_KEY) }
+        dataStore.edit { prefs ->
+            prefs.remove(TOKEN_KEY)
+            prefs.remove(ROLE_KEY)
+        }
     }
 
-    override suspend fun getToken(): String? {
-        return dataStore.data.map { it[TOKEN_KEY] }.firstOrNull()
+    override suspend fun getToken(): String? =
+        dataStore.data.map { it[TOKEN_KEY] }.firstOrNull()
+
+    override suspend fun saveRole(role: UserRole) {
+        dataStore.edit { prefs -> prefs[ROLE_KEY] = role.name }
+    }
+
+    override suspend fun getRole(): UserRole {
+        val roleName = dataStore.data.map { it[ROLE_KEY] }.firstOrNull()
+        return try {
+            UserRole.valueOf(roleName ?: UserRole.OWNER.name)
+        } catch (e: Exception) {
+            UserRole.OWNER
+        }
     }
 }

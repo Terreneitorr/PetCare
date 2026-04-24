@@ -13,6 +13,7 @@ import androidx.lifecycle.lifecycleScope
 import com.tuapp.petcare.core.navigation.AppNavigation
 import com.tuapp.petcare.core.ui.theme.PetCareTheme
 import com.tuapp.petcare.core.workers.NotificationHelper
+import com.tuapp.petcare.features.auth.domain.entities.UserRole
 import com.tuapp.petcare.features.auth.domain.repositories.AuthRepository
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -37,12 +38,16 @@ class MainActivity : ComponentActivity() {
         requestNotificationPermission()
 
         lifecycleScope.launch {
-            val token = authRepository.getToken()
+            val token    = authRepository.getToken()
+            val role     = authRepository.getRole()
             val isLoggedIn = !token.isNullOrBlank()
 
             setContent {
                 PetCareTheme {
-                    AppNavigation(isLoggedIn = isLoggedIn)
+                    AppNavigation(
+                        isLoggedIn = isLoggedIn,
+                        userRole   = role
+                    )
                 }
             }
         }
@@ -56,9 +61,7 @@ class MainActivity : ComponentActivity() {
                 ) == PackageManager.PERMISSION_GRANTED -> {
                     NotificationHelper.createChannels(this)
                 }
-                else -> {
-                    requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                }
+                else -> requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
         }
     }

@@ -2,8 +2,9 @@ package com.tuapp.petcare.features.auth.presentation.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.tuapp.petcare.features.auth.domain.usecases.RegisterUseCase
+import com.tuapp.petcare.features.auth.domain.entities.UserRole
 import com.tuapp.petcare.features.auth.domain.repositories.AuthRepository
+import com.tuapp.petcare.features.auth.domain.usecases.RegisterUseCase
 import com.tuapp.petcare.features.auth.presentation.screens.RegisterUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,41 +22,30 @@ class RegisterViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(RegisterUiState())
     val uiState = _uiState.asStateFlow()
 
-    fun onNameChange(value: String) =
-        _uiState.update { it.copy(name = value, error = null) }
-
-    fun onEmailChange(value: String) =
-        _uiState.update { it.copy(email = value, error = null) }
-
-    fun onPasswordChange(value: String) =
-        _uiState.update { it.copy(password = value, error = null) }
-
-    fun onConfirmPasswordChange(value: String) =
-        _uiState.update { it.copy(confirmPassword = value, error = null) }
-
-    fun onTogglePasswordVisibility() =
-        _uiState.update { it.copy(passwordVisible = !it.passwordVisible) }
+    fun onNameChange(v: String)            = _uiState.update { it.copy(name = v, error = null) }
+    fun onEmailChange(v: String)           = _uiState.update { it.copy(email = v, error = null) }
+    fun onPasswordChange(v: String)        = _uiState.update { it.copy(password = v, error = null) }
+    fun onConfirmPasswordChange(v: String) = _uiState.update { it.copy(confirmPassword = v, error = null) }
+    fun onTogglePasswordVisibility()       = _uiState.update { it.copy(passwordVisible = !it.passwordVisible) }
+    fun onRoleChange(role: UserRole)       = _uiState.update { it.copy(role = role) }
 
     fun onRegister() {
         viewModelScope.launch {
-            val state = _uiState.value
-            if (state.password != state.confirmPassword) {
+            val s = _uiState.value
+            if (s.password != s.confirmPassword) {
                 _uiState.update { it.copy(error = "Las contraseñas no coinciden") }
                 return@launch
             }
             _uiState.update { it.copy(isLoading = true, error = null) }
-            val result = registerUseCase(
-                name = state.name,
-                email = state.email,
-                password = state.password
-            )
+            val result = registerUseCase(s.name, s.email, s.password)
             result.fold(
                 onSuccess = { user ->
                     authRepository.saveSession(user.token)
+                    authRepository.saveRole(s.role)  // Guarda el rol elegido
                     _uiState.update { it.copy(isLoading = false, isSuccess = true) }
                 },
-                onFailure = { error ->
-                    _uiState.update { it.copy(isLoading = false, error = error.message) }
+                onFailure = { e ->
+                    _uiState.update { it.copy(isLoading = false, error = e.message) }
                 }
             )
         }

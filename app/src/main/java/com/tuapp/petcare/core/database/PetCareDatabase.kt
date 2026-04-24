@@ -14,6 +14,8 @@ import com.tuapp.petcare.features.profile.data.datasources.local.ProfileDao
 import com.tuapp.petcare.features.profile.data.datasources.local.ProfileEntity
 import com.tuapp.petcare.features.reminders.data.datasources.local.ReminderDao
 import com.tuapp.petcare.features.reminders.data.datasources.local.ReminderEntity
+import com.tuapp.petcare.features.vet.data.datasources.local.MedicineDao
+import com.tuapp.petcare.features.vet.data.datasources.local.MedicineEntity
 import com.tuapp.petcare.features.weight.data.datasources.local.WeightDao
 import com.tuapp.petcare.features.weight.data.datasources.local.WeightEntity
 
@@ -24,9 +26,10 @@ import com.tuapp.petcare.features.weight.data.datasources.local.WeightEntity
         ReminderEntity::class,
         ProfileEntity::class,
         AppointmentEntity::class,
-        WeightEntity::class
+        WeightEntity::class,
+        MedicineEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class PetCareDatabase : RoomDatabase() {
@@ -36,6 +39,7 @@ abstract class PetCareDatabase : RoomDatabase() {
     abstract fun profileDao(): ProfileDao
     abstract fun appointmentDao(): AppointmentDao
     abstract fun weightDao(): WeightDao
+    abstract fun medicineDao(): MedicineDao
 
     companion object {
         @Volatile private var INSTANCE: PetCareDatabase? = null
