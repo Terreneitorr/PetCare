@@ -1,10 +1,12 @@
 package com.tuapp.petcare.features.appointments.presentation.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -14,7 +16,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.tuapp.petcare.features.appointments.presentation.viewmodels.AppointmentsViewModel
+import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,7 +34,8 @@ fun AddAppointmentScreen(
     var selectedHour   by remember { mutableIntStateOf(9) }
     var selectedMinute by remember { mutableIntStateOf(0) }
     var minuteText     by remember { mutableStateOf("00") }
-    var dateText       by remember { mutableStateOf("") }
+    var selectedDateMillis by remember { mutableStateOf<Long?>(null) }
+    var dateDisplayText by remember { mutableStateOf("") }
 
     val displayHour = when {
         selectedHour == 0  -> 12
@@ -38,6 +44,31 @@ fun AddAppointmentScreen(
     }
     val amPm = if (selectedHour < 12) "AM" else "PM"
 
+    // ── DatePicker ────────────────────────────────────────────────────────────
+    var showDatePicker by remember { mutableStateOf(false) }
+    val datePickerState = rememberDatePickerState()
+
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { millis ->
+                        selectedDateMillis = millis
+                        dateDisplayText = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                            .format(Date(millis))
+                    }
+                    showDatePicker = false
+                }) { Text("Aceptar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) { Text("Cancelar") }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
     LaunchedEffect(uiState.isSuccess) {
         if (uiState.isSuccess) {
             viewModel.resetAddSuccess()
@@ -45,14 +76,14 @@ fun AddAppointmentScreen(
         }
     }
 
-    LaunchedEffect(dateText, selectedHour, selectedMinute) {
-        val digits = dateText.filter { it.isDigit() }
-        if (digits.length >= 8) {
-            val day   = digits.substring(0, 2).toIntOrNull() ?: return@LaunchedEffect
-            val month = (digits.substring(2, 4).toIntOrNull() ?: return@LaunchedEffect) - 1
-            val year  = digits.substring(4, 8).toIntOrNull() ?: return@LaunchedEffect
+    // Recalcula timestamp cuando cambia fecha u hora
+    LaunchedEffect(selectedDateMillis, selectedHour, selectedMinute) {
+        selectedDateMillis?.let { dateMillis ->
             val cal = Calendar.getInstance().apply {
-                set(year, month, day, selectedHour, selectedMinute, 0)
+                timeInMillis = dateMillis
+                set(Calendar.HOUR_OF_DAY, selectedHour)
+                set(Calendar.MINUTE, selectedMinute)
+                set(Calendar.SECOND, 0)
                 set(Calendar.MILLISECOND, 0)
             }
             viewModel.onDateTimeMillisChange(cal.timeInMillis)
@@ -108,25 +139,25 @@ fun AddAppointmentScreen(
             )
             Spacer(modifier = Modifier.height(12.dp))
 
-            // ── Campo de fecha corregido ──────────────────────────────────
+            // ── Campo fecha con DatePicker ─────────────────────────────────
             OutlinedTextField(
-                value = dateText,
-                onValueChange = { input ->
-                    val digits = input.filter { it.isDigit() }.take(8)
-                    dateText = buildString {
-                        digits.forEachIndexed { i, c ->
-                            if (i == 2 || i == 4) append('/')
-                            append(c)
-                        }
+                value = dateDisplayText,
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Fecha de la cita") },
+                placeholder = { Text("Selecciona una fecha") },
+                trailingIcon = {
+                    IconButton(onClick = { showDatePicker = true }) {
+                        Icon(Icons.Default.CalendarMonth, "Seleccionar fecha")
                     }
                 },
-                label = { Text("Fecha") },
-                placeholder = { Text("DD/MM/YYYY") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showDatePicker = true }
             )
             Spacer(modifier = Modifier.height(12.dp))
 
+            // ── Hora con AM/PM ─────────────────────────────────────────────
             Text(
                 "Hora (formato 12h):",
                 style = MaterialTheme.typography.labelMedium,

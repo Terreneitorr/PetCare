@@ -8,12 +8,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -32,6 +32,9 @@ import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import com.tuapp.petcare.features.pets.presentation.viewmodels.AddPetViewModel
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 val SPECIES_OPTIONS = listOf("Perro", "Gato", "Ave", "Conejo", "Pez", "Reptil", "Otro")
 
@@ -50,20 +53,39 @@ fun AddPetScreen(
 
     val cameraPermission = rememberPermissionState(android.Manifest.permission.CAMERA)
     var cameraUri by remember { mutableStateOf<Uri?>(null) }
-
     val cameraLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.TakePicture()
-    ) { success ->
-        if (success) cameraUri?.let { viewModel.onPhotoSelected(it) }
-    }
-
+    ) { success -> if (success) cameraUri?.let { viewModel.onPhotoSelected(it) } }
     val galleryLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.GetContent()
-    ) { uri ->
-        uri?.let { viewModel.onPhotoSelected(it) }
-    }
+    ) { uri -> uri?.let { viewModel.onPhotoSelected(it) } }
 
     var showPhotoDialog by remember { mutableStateOf(false) }
+
+    // ── DatePicker ────────────────────────────────────────────────────────────
+    var showDatePicker by remember { mutableStateOf(false) }
+    val datePickerState = rememberDatePickerState()
+
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { millis ->
+                        val formatted = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                            .format(Date(millis))
+                        viewModel.onBirthDateChange(formatted.filter { it.isDigit() })
+                    }
+                    showDatePicker = false
+                }) { Text("Aceptar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) { Text("Cancelar") }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -87,6 +109,7 @@ fun AddPetScreen(
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
+            // ── Foto ─────────────────────────────────────────────────────────
             Box(
                 modifier = Modifier
                     .size(110.dp)
@@ -125,9 +148,9 @@ fun AddPetScreen(
                 singleLine = true,
                 isError = uiState.error != null && uiState.name.isBlank()
             )
-
             Spacer(modifier = Modifier.height(12.dp))
 
+            // Dropdown especie
             ExposedDropdownMenuBox(
                 expanded = uiState.showSpeciesDropdown,
                 onExpandedChange = { viewModel.onToggleDropdown() }
@@ -137,12 +160,8 @@ fun AddPetScreen(
                     onValueChange = {},
                     readOnly = true,
                     label = { Text("Especie") },
-                    trailingIcon = {
-                        Icon(Icons.Default.ArrowDropDown, contentDescription = null)
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor()
+                    trailingIcon = { Icon(Icons.Default.ArrowDropDown, null) },
+                    modifier = Modifier.fillMaxWidth().menuAnchor()
                 )
                 ExposedDropdownMenu(
                     expanded = uiState.showSpeciesDropdown,
@@ -156,7 +175,6 @@ fun AddPetScreen(
                     }
                 }
             }
-
             Spacer(modifier = Modifier.height(12.dp))
 
             OutlinedTextField(
@@ -166,21 +184,23 @@ fun AddPetScreen(
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
-
             Spacer(modifier = Modifier.height(12.dp))
 
-            // ── Campo de fecha corregido ──────────────────────────────────
+            // ── Campo fecha con DatePicker ─────────────────────────────────
             OutlinedTextField(
                 value = uiState.birthDate,
-                onValueChange = { input ->
-                    // Filtra solo dígitos para reconstruir desde cero
-                    val digits = input.filter { it.isDigit() }.take(8)
-                    viewModel.onBirthDateChange(digits)
-                },
+                onValueChange = {},
+                readOnly = true,
                 label = { Text("Fecha de nacimiento") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                placeholder = { Text("DD/MM/YYYY") }
+                placeholder = { Text("Selecciona una fecha") },
+                trailingIcon = {
+                    IconButton(onClick = { showDatePicker = true }) {
+                        Icon(Icons.Default.CalendarMonth, "Seleccionar fecha")
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showDatePicker = true }
             )
 
             if (uiState.error != null) {
@@ -196,9 +216,7 @@ fun AddPetScreen(
 
             Button(
                 onClick = { viewModel.onSavePet(ownerId = "local_user") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp),
+                modifier = Modifier.fillMaxWidth().height(50.dp),
                 enabled = !uiState.isLoading
             ) {
                 if (uiState.isLoading) {
@@ -211,7 +229,6 @@ fun AddPetScreen(
                     Text("Guardar mascota")
                 }
             }
-
             Spacer(modifier = Modifier.height(24.dp))
         }
     }
@@ -228,9 +245,7 @@ fun AddPetScreen(
                             if (cameraPermission.status.isGranted) {
                                 val file = File(context.cacheDir, "pet_photo_${System.currentTimeMillis()}.jpg")
                                 val uri = FileProvider.getUriForFile(
-                                    context,
-                                    "${context.packageName}.fileprovider",
-                                    file
+                                    context, "${context.packageName}.fileprovider", file
                                 )
                                 cameraUri = uri
                                 cameraLauncher.launch(uri)
@@ -240,7 +255,6 @@ fun AddPetScreen(
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) { Text("📷  Tomar foto") }
-
                     TextButton(
                         onClick = {
                             showPhotoDialog = false

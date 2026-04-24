@@ -30,8 +30,6 @@ import kotlinx.serialization.Serializable
 @Serializable object RegisterRoute
 @Serializable object PetListRoute
 @Serializable object AddPetRoute
-
-// MedHistoryRoute ahora recibe todos los datos de la mascota
 @Serializable data class MedHistoryRoute(
     val petId: String,
     val petName: String,
@@ -56,11 +54,12 @@ import kotlinx.serialization.Serializable
 // ── NavHost principal ─────────────────────────────────────────────────────────
 @Composable
 fun AppNavigation(
-    navController: NavHostController = rememberNavController()
+    navController: NavHostController = rememberNavController(),
+    isLoggedIn: Boolean = false
 ) {
     NavHost(
         navController = navController,
-        startDestination = LoginRoute
+        startDestination = if (isLoggedIn) PetListRoute else LoginRoute
     ) {
 
         composable<LoginRoute> {
@@ -88,7 +87,6 @@ fun AppNavigation(
         composable<PetListRoute> {
             PetListScreen(
                 onAddPet = { navController.navigate(AddPetRoute) },
-                // Ahora pasa todos los datos de la mascota
                 onPetClick = { pet ->
                     navController.navigate(
                         MedHistoryRoute(
@@ -115,9 +113,7 @@ fun AppNavigation(
                 onBack = { navController.popBackStack() },
                 onAddVaccine = { navController.navigate(AddVaccineRoute(route.petId)) },
                 onAppointments = {
-                    navController.navigate(
-                        AppointmentsRoute(route.petId, route.petName)
-                    )
+                    navController.navigate(AppointmentsRoute(route.petId, route.petName))
                 },
                 onWeightGrowth = {
                     navController.navigate(
@@ -165,6 +161,11 @@ fun AppNavigation(
                 onBack = { navController.popBackStack() },
                 onEditProfile = {
                     navController.navigate(EditProfileRoute("local_user", ""))
+                },
+                onLogout = {
+                    navController.navigate(LoginRoute) {
+                        popUpTo(0) { inclusive = true }
+                    }
                 }
             )
         }
@@ -185,9 +186,7 @@ fun AppNavigation(
                 petName = route.petName,
                 onBack = { navController.popBackStack() },
                 onAddAppointment = {
-                    navController.navigate(
-                        AddAppointmentRoute(route.petId, route.petName)
-                    )
+                    navController.navigate(AddAppointmentRoute(route.petId, route.petName))
                 }
             )
         }

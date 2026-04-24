@@ -8,6 +8,7 @@ import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -17,6 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -76,8 +78,7 @@ fun RemindersScreen(
             val now = System.currentTimeMillis()
             val limit = now + 24 * 60 * 60 * 1000L
             val proximosCount = uiState.reminders.count {
-                it.isActive &&
-                        it.triggerAtMillis in now..limit
+                it.isActive && it.triggerAtMillis in now..limit
             }
             if (proximosCount > 0) {
                 Surface(
@@ -171,6 +172,7 @@ fun RemindersScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AddReminderDialog(
     uiState: RemindersUiState,
@@ -187,11 +189,35 @@ private fun AddReminderDialog(
     var selectedDay    by remember { mutableIntStateOf(now.get(Calendar.DAY_OF_MONTH)) }
     var selectedMonth  by remember { mutableIntStateOf(now.get(Calendar.MONTH)) }
     var selectedYear   by remember { mutableIntStateOf(now.get(Calendar.YEAR)) }
-
-    var minuteText by remember {
+    var minuteText     by remember {
         mutableStateOf(now.get(Calendar.MINUTE).toString().padStart(2, '0'))
     }
-    var dateText by remember { mutableStateOf("") }
+
+    // ── DatePicker ────────────────────────────────────────────────────────────
+    var showDatePicker by remember { mutableStateOf(false) }
+    val datePickerState = rememberDatePickerState()
+
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { millis ->
+                        val cal = Calendar.getInstance().apply { timeInMillis = millis }
+                        selectedDay   = cal.get(Calendar.DAY_OF_MONTH)
+                        selectedMonth = cal.get(Calendar.MONTH)
+                        selectedYear  = cal.get(Calendar.YEAR)
+                    }
+                    showDatePicker = false
+                }) { Text("Aceptar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) { Text("Cancelar") }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
 
     val displayHour = when {
         selectedHour == 0 -> 12
@@ -200,22 +226,16 @@ private fun AddReminderDialog(
     }
     val amPm = if (selectedHour < 12) "AM" else "PM"
 
+    // Texto de fecha para mostrar
+    val dateDisplay = "%02d/%02d/%d".format(selectedDay, selectedMonth + 1, selectedYear)
+
+    // Actualiza el timestamp cuando cambia cualquier valor
     LaunchedEffect(selectedHour, selectedMinute, selectedDay, selectedMonth, selectedYear) {
         val cal = Calendar.getInstance().apply {
             set(selectedYear, selectedMonth, selectedDay, selectedHour, selectedMinute, 0)
             set(Calendar.MILLISECOND, 0)
         }
         onMillis(cal.timeInMillis)
-    }
-
-    LaunchedEffect(dateText) {
-        val digits = dateText.filter { it.isDigit() }
-        if (digits.length >= 2)
-            selectedDay = digits.substring(0, 2).toIntOrNull()?.coerceIn(1, 31) ?: selectedDay
-        if (digits.length >= 4)
-            selectedMonth = (digits.substring(2, 4).toIntOrNull()?.coerceIn(1, 12) ?: (selectedMonth + 1)) - 1
-        if (digits.length >= 8)
-            selectedYear = digits.substring(4, 8).toIntOrNull() ?: selectedYear
     }
 
     AlertDialog(
@@ -247,22 +267,24 @@ private fun AddReminderDialog(
                     modifier = Modifier.fillMaxWidth(),
                     maxLines = 3
                 )
+
+                // ── Campo fecha con DatePicker ─────────────────────────────
                 OutlinedTextField(
-                    value = dateText,
-                    onValueChange = { input ->
-                        val digits = input.filter { it.isDigit() }.take(8)
-                        dateText = buildString {
-                            digits.forEachIndexed { i, c ->
-                                if (i == 2 || i == 4) append('/')
-                                append(c)
-                            }
+                    value = dateDisplay,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Fecha") },
+                    placeholder = { Text("Selecciona una fecha") },
+                    trailingIcon = {
+                        IconButton(onClick = { showDatePicker = true }) {
+                            Icon(Icons.Default.CalendarMonth, "Seleccionar fecha")
                         }
                     },
-                    label = { Text("Fecha") },
-                    placeholder = { Text("DD/MM/YYYY") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showDatePicker = true }
                 )
+
                 Text(
                     "Hora (formato 12h):",
                     style = MaterialTheme.typography.labelMedium,
@@ -307,6 +329,7 @@ private fun AddReminderDialog(
                         Text(amPm, fontWeight = FontWeight.Bold)
                     }
                 }
+
                 if (uiState.saveError != null) {
                     Text(
                         text = uiState.saveError,
