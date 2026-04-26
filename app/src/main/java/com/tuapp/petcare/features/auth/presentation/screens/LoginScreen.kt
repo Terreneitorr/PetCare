@@ -17,20 +17,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.tuapp.petcare.features.auth.domain.entities.UserRole
 import com.tuapp.petcare.features.auth.presentation.components.AuthTextField
 import com.tuapp.petcare.features.auth.presentation.viewmodels.LoginViewModel
 
 @Composable
 fun LoginScreen(
-    onLoginSuccess: () -> Unit,
+    onLoginSuccess: (UserRole) -> Unit,
     onGoToRegister: () -> Unit,
     viewModel: LoginViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    // Navegar cuando login sea exitoso
     LaunchedEffect(uiState.isSuccess) {
-        if (uiState.isSuccess) onLoginSuccess()
+        if (uiState.isSuccess) onLoginSuccess(uiState.role)
     }
 
     Scaffold { innerPadding ->
@@ -43,8 +43,6 @@ fun LoginScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-
-            // Logo / título
             Text(text = "🐾", fontSize = 64.sp)
             Spacer(modifier = Modifier.height(8.dp))
             Text(
@@ -60,7 +58,6 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(40.dp))
 
-            // Campos
             AuthTextField(
                 value = uiState.email,
                 onValueChange = viewModel::onEmailChange,
@@ -81,7 +78,6 @@ fun LoginScreen(
                 isError = uiState.error != null
             )
 
-            // Error
             if (uiState.error != null) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
@@ -94,7 +90,6 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Botón login
             Button(
                 onClick = viewModel::onLogin,
                 modifier = Modifier
@@ -115,7 +110,6 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Ir a registro
             TextButton(onClick = onGoToRegister) {
                 Text("¿No tienes cuenta? Regístrate")
             }

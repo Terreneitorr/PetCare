@@ -42,10 +42,10 @@ class LoginViewModel @Inject constructor(
             result.fold(
                 onSuccess = { user ->
                     authRepository.saveSession(user.token)
-                    // Registra el token FCM en Realtime Database
-                    // para que el médico pueda mandar notificaciones push
                     fcmTokenManager.registerToken(user.id)
-                    _uiState.update { it.copy(isLoading = false, isSuccess = true) }
+                    // Lee el rol guardado en DataStore cuando se registró
+                    val role = authRepository.getRole()
+                    _uiState.update { it.copy(isLoading = false, isSuccess = true, role = role) }
                 },
                 onFailure = { error ->
                     _uiState.update { it.copy(isLoading = false, error = error.message) }

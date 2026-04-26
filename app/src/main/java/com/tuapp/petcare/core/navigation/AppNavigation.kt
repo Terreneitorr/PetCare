@@ -73,8 +73,9 @@ fun AppNavigation(
         // ── AUTH ──────────────────────────────────────────────────────────────
         composable<LoginRoute> {
             LoginScreen(
-                onLoginSuccess = {
-                    navController.navigate(PetListRoute) {
+                onLoginSuccess = { role ->
+                    val dest = if (role == UserRole.VET) VetDashboardRoute else PetListRoute
+                    navController.navigate(dest) {
                         popUpTo(LoginRoute) { inclusive = true }
                     }
                 },
